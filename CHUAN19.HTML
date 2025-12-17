@@ -1,0 +1,596 @@
+<!doctype html>
+<html lang="vi" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Phân loại thiết bị thông minh</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&amp;display=swap" rel="stylesheet">
+  <script src="/_sdk/element_sdk.js"></script>
+  <style>
+        body {
+            box-sizing: border-box;
+            font-family: 'Nunito', sans-serif;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+        
+        .slide-in {
+            animation: slideIn 0.5s ease-out;
+        }
+        
+        .device-item {
+            transition: all 0.3s ease;
+            cursor: grab;
+            user-select: none;
+        }
+        
+        .device-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        
+        .device-item:active {
+            cursor: grabbing;
+        }
+        
+        .device-item.dragging {
+            opacity: 0.5;
+        }
+        
+        .drop-zone {
+            transition: all 0.3s ease;
+        }
+        
+        .drop-zone.drag-over {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transform: scale(1.02);
+        }
+        
+        .correct-flash {
+            animation: correctFlash 0.6s ease;
+        }
+        
+        .wrong-flash {
+            animation: wrongFlash 0.6s ease;
+        }
+        
+        @keyframes correctFlash {
+            0%, 100% { background-color: transparent; }
+            50% { background-color: rgba(34, 197, 94, 0.3); }
+        }
+        
+        @keyframes wrongFlash {
+            0%, 100% { background-color: transparent; }
+            50% { background-color: rgba(239, 68, 68, 0.3); }
+        }
+        
+        .star {
+            display: inline-block;
+            font-size: 2rem;
+            color: #fbbf24;
+            animation: starPop 0.5s ease forwards;
+        }
+        
+        @keyframes starPop {
+            0% {
+                transform: scale(0);
+            }
+            50% {
+                transform: scale(1.2);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+    </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+ </head>
+ <body class="h-full w-full overflow-auto">
+  <div id="app" class="min-h-full w-full bg-gradient-to-br from-purple-400 via-pink-400 to-blue-400"><!-- Trang bìa -->
+   <div id="welcomePage" class="min-h-full w-full flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full slide-in">
+     <div class="text-center mb-8">
+      <h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 mb-2" id="welcomeTitle">Phân loại thiết bị thông minh</h1>
+      <p class="text-gray-600">🎮 Trò chơi học tập vui nhộn</p>
+     </div>
+     <div class="space-y-4 mb-6">
+      <div><label for="studentName" class="block text-sm font-semibold text-gray-700 mb-2">Họ và tên</label> <input type="text" id="studentName" class="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:outline-none focus:border-purple-500 transition" placeholder="Nhập họ và tên của bạn">
+      </div>
+      <div><label for="studentClass" class="block text-sm font-semibold text-gray-700 mb-2">Lớp</label> <input type="text" id="studentClass" class="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:outline-none focus:border-purple-500 transition" placeholder="Ví dụ: 8A1">
+      </div>
+     </div><button id="startButton" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition duration-300"> Bắt đầu trò chơi 🚀 </button>
+    </div>
+   </div><!-- Màn hình game -->
+   <div id="gamePage" class="hidden min-h-full w-full p-4">
+    <div class="max-w-7xl mx-auto"><!-- Header -->
+     <div class="bg-white rounded-2xl shadow-lg p-4 mb-4 flex flex-wrap items-center justify-between gap-4">
+      <div>
+       <h2 class="text-2xl font-bold text-gray-800" id="gameTitle">Phân loại thiết bị thông minh</h2>
+       <p class="text-sm text-gray-600" id="studentInfo"></p>
+      </div>
+      <div class="flex items-center gap-4">
+       <div class="bg-gradient-to-r from-orange-400 to-red-500 text-white px-6 py-3 rounded-xl font-bold text-xl shadow-lg">
+        ⏱️ <span id="timer">60</span>s
+       </div>
+       <div class="bg-gradient-to-r from-green-400 to-blue-500 text-white px-6 py-3 rounded-xl font-bold text-xl shadow-lg">
+        🎯 <span id="score">0</span> điểm
+       </div>
+      </div>
+     </div><!-- Hướng dẫn -->
+     <div class="bg-white rounded-2xl shadow-lg p-4 mb-4">
+      <p class="text-center text-gray-700 font-semibold" id="instructionText">🎯 Kéo các thiết bị thông minh vào khu vực bên dưới</p>
+     </div><!-- Khu vực thả -->
+     <div class="bg-white rounded-2xl shadow-lg p-6 mb-4">
+      <h3 class="text-xl font-bold text-gray-800 mb-4">✅ Thiết bị thông minh</h3>
+      <div id="dropZone" class="drop-zone border-4 border-dashed border-purple-300 rounded-2xl min-h-64 p-4 bg-gradient-to-br from-purple-50 to-pink-50">
+       <div id="droppedDevices" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3"></div>
+       <p id="emptyMessage" class="text-center text-gray-400 mt-8">Kéo thiết bị vào đây</p>
+      </div>
+     </div><!-- Danh sách thiết bị -->
+     <div class="bg-white rounded-2xl shadow-lg p-6">
+      <h3 class="text-xl font-bold text-gray-800 mb-4">📦 Danh sách thiết bị</h3>
+      <div id="deviceList" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3"></div>
+     </div><!-- Nút chức năng -->
+     <div class="flex flex-wrap gap-4 mt-4 justify-center"><button id="submitButton" class="bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition duration-300"> 📤 Nộp bài </button> <button id="resetButton" class="bg-gradient-to-r from-gray-500 to-gray-600 text-white font-bold px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition duration-300"> 🔄 Chơi lại </button>
+     </div>
+    </div>
+   </div><!-- Trang kết quả -->
+   <div id="resultPage" class="hidden min-h-full w-full flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full slide-in">
+     <h2 class="text-4xl font-bold text-center text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 mb-6" id="resultPageTitle">Kết quả của bạn</h2>
+     <div class="bg-gradient-to-r from-purple-100 to-pink-100 rounded-2xl p-6 mb-6">
+      <p class="text-lg font-semibold text-gray-800" id="resultStudentInfo"></p>
+     </div>
+     <div class="grid grid-cols-2 gap-4 mb-6">
+      <div class="bg-green-100 rounded-2xl p-6 text-center">
+       <div class="text-5xl font-bold text-green-600" id="correctCount">
+        0
+       </div>
+       <p class="text-gray-700 font-semibold mt-2">✅ Đúng</p>
+      </div>
+      <div class="bg-red-100 rounded-2xl p-6 text-center">
+       <div class="text-5xl font-bold text-red-600" id="wrongCount">
+        0
+       </div>
+       <p class="text-gray-700 font-semibold mt-2">❌ Sai</p>
+      </div>
+     </div>
+     <div class="bg-gradient-to-r from-yellow-100 to-orange-100 rounded-2xl p-6 mb-6 text-center">
+      <div class="text-6xl font-bold text-purple-600 mb-2" id="finalScore">
+       0
+      </div>
+      <p class="text-gray-700 font-semibold mb-4">Tổng điểm</p>
+      <div id="stars" class="text-5xl mb-2"></div>
+      <p class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600" id="rating"></p>
+     </div>
+     <div class="flex flex-wrap gap-4 justify-center"><button id="backToGameButton" class="bg-gradient-to-r from-blue-500 to-cyan-600 text-white font-bold px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition duration-300"> 👀 Xem lại bài làm </button> <button id="playAgainButton" class="bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition duration-300"> 🔄 Chơi lại </button>
+     </div>
+    </div>
+   </div>
+  </div>
+  <script>
+        const defaultConfig = {
+            game_title: "Phân loại thiết bị thông minh",
+            instruction_text: "🎯 Kéo các thiết bị thông minh vào khu vực bên dưới",
+            start_button_text: "Bắt đầu trò chơi 🚀",
+            submit_button_text: "📤 Nộp bài",
+            result_title: "Kết quả của bạn"
+        };
+
+        // Danh sách thiết bị
+        const devices = [
+            { id: 1, name: "Điện thoại thông minh", emoji: "📱", isSmart: true },
+            { id: 2, name: "Laptop", emoji: "💻", isSmart: true },
+            { id: 3, name: "Đồng hồ thông minh", emoji: "⌚", isSmart: true },
+            { id: 4, name: "Tivi thông minh", emoji: "📺", isSmart: true },
+            { id: 5, name: "Loa thông minh", emoji: "🔊", isSmart: true },
+            { id: 6, name: "Máy tính bảng", emoji: "📲", isSmart: true },
+            { id: 7, name: "Camera an ninh", emoji: "📷", isSmart: true },
+            { id: 8, name: "Tai nghe không dây", emoji: "🎧", isSmart: true },
+            { id: 9, name: "Máy lọc không khí thông minh", emoji: "💨", isSmart: true },
+            { id: 10, name: "Đèn thông minh", emoji: "💡", isSmart: true },
+            { id: 11, name: "Nhà thông minh", emoji: "🏠", isSmart: true },
+            { id: 12, name: "Điện thoại cố định", emoji: "☎️", isSmart: false },
+            { id: 13, name: "Radio", emoji: "📻", isSmart: false },
+            { id: 14, name: "Bút chì", emoji: "✏️", isSmart: false },
+            { id: 15, name: "Sách", emoji: "📚", isSmart: false },
+            { id: 16, name: "Quạt thường", emoji: "🌀", isSmart: false },
+            { id: 17, name: "Đồng hồ báo thức", emoji: "⏰", isSmart: false },
+            { id: 18, name: "Máy in", emoji: "🖨️", isSmart: false }
+        ];
+
+        let gameState = {
+            studentName: "",
+            studentClass: "",
+            droppedDevices: [],
+            timeLeft: 60,
+            timerInterval: null,
+            score: 0,
+            gameEnded: false
+        };
+        
+        let draggedDeviceId = null;
+
+        // Khởi tạo game
+        function initGame() {
+            renderDevices();
+            setupDragAndDrop();
+            setupButtons();
+        }
+
+        // Render danh sách thiết bị
+        function renderDevices() {
+            const deviceList = document.getElementById('deviceList');
+            deviceList.innerHTML = '';
+            
+            devices.forEach(device => {
+                // Chỉ hiển thị thiết bị chưa được kéo vào
+                if (gameState.droppedDevices.find(d => d.id === device.id)) {
+                    return;
+                }
+                
+                const deviceEl = document.createElement('div');
+                deviceEl.className = 'device-item bg-gradient-to-br from-blue-100 to-purple-100 p-4 rounded-xl shadow-md text-center';
+                deviceEl.draggable = true;
+                deviceEl.dataset.deviceId = device.id;
+                deviceEl.innerHTML = `
+                    <div class="text-4xl mb-2">${device.emoji}</div>
+                    <div class="text-sm font-semibold text-gray-700">${device.name}</div>
+                `;
+                deviceList.appendChild(deviceEl);
+            });
+            
+            setupDragListeners();
+        }
+
+        // Setup Drag and Drop
+        function setupDragAndDrop() {
+            const dropZone = document.getElementById('dropZone');
+            dropZone.addEventListener('dragover', handleDragOver);
+            dropZone.addEventListener('dragleave', handleDragLeave);
+            dropZone.addEventListener('drop', handleDrop);
+        }
+        
+        function setupDragListeners() {
+            const deviceItems = document.querySelectorAll('#deviceList .device-item');
+            deviceItems.forEach(item => {
+                item.addEventListener('dragstart', handleDragStart);
+                item.addEventListener('dragend', handleDragEnd);
+            });
+        }
+
+        function handleDragStart(e) {
+            if (gameState.gameEnded) {
+                e.preventDefault();
+                return;
+            }
+            draggedDeviceId = parseInt(e.target.dataset.deviceId);
+            e.target.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', draggedDeviceId);
+        }
+
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+            draggedDeviceId = null;
+        }
+
+        function handleDragOver(e) {
+            if (gameState.gameEnded) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            document.getElementById('dropZone').classList.add('drag-over');
+        }
+
+        function handleDragLeave(e) {
+            if (e.target.id === 'dropZone') {
+                document.getElementById('dropZone').classList.remove('drag-over');
+            }
+        }
+
+        function handleDrop(e) {
+            if (gameState.gameEnded) return;
+            e.preventDefault();
+            document.getElementById('dropZone').classList.remove('drag-over');
+            
+            const deviceId = draggedDeviceId || parseInt(e.dataTransfer.getData('text/plain'));
+            const device = devices.find(d => d.id === deviceId);
+            
+            if (!device || gameState.droppedDevices.find(d => d.id === deviceId)) return;
+            
+            gameState.droppedDevices.push(device);
+            
+            // Phát âm thanh
+            if (device.isSmart) {
+                playSound('correct.mp3');
+                document.getElementById('dropZone').classList.add('correct-flash');
+                setTimeout(() => {
+                    document.getElementById('dropZone').classList.remove('correct-flash');
+                }, 600);
+            } else {
+                playSound('wrong.mp3');
+                document.getElementById('dropZone').classList.add('wrong-flash');
+                setTimeout(() => {
+                    document.getElementById('dropZone').classList.remove('wrong-flash');
+                }, 600);
+            }
+            
+            renderDroppedDevices();
+            renderDevices(); // Cập nhật lại danh sách thiết bị
+            updateScore();
+        }
+
+        // Render thiết bị đã thả
+        function renderDroppedDevices() {
+            const container = document.getElementById('droppedDevices');
+            const emptyMessage = document.getElementById('emptyMessage');
+            
+            if (gameState.droppedDevices.length === 0) {
+                container.innerHTML = '';
+                emptyMessage.style.display = 'block';
+                return;
+            }
+            
+            emptyMessage.style.display = 'none';
+            container.innerHTML = '';
+            
+            gameState.droppedDevices.forEach(device => {
+                let borderColor = 'border-purple-300';
+                let bgColor = 'bg-white';
+                
+                // Nếu đã nộp bài, hiển thị màu đúng/sai
+                if (gameState.gameEnded) {
+                    if (device.isSmart) {
+                        borderColor = 'border-green-500';
+                        bgColor = 'bg-green-50';
+                    } else {
+                        borderColor = 'border-red-500';
+                        bgColor = 'bg-red-50';
+                    }
+                }
+                
+                const deviceEl = document.createElement('div');
+                deviceEl.className = `${bgColor} p-4 rounded-xl shadow-md text-center relative border-2 ${borderColor}`;
+                deviceEl.innerHTML = `
+                    ${!gameState.gameEnded ? `<button class="remove-btn absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600" data-device-id="${device.id}">×</button>` : ''}
+                    <div class="text-3xl mb-2">${device.emoji}</div>
+                    <div class="text-xs font-semibold text-gray-700">${device.name}</div>
+                `;
+                container.appendChild(deviceEl);
+            });
+            
+            // Setup remove buttons
+            document.querySelectorAll('.remove-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    if (gameState.gameEnded) return;
+                    const deviceId = parseInt(e.target.dataset.deviceId);
+                    gameState.droppedDevices = gameState.droppedDevices.filter(d => d.id !== deviceId);
+                    renderDroppedDevices();
+                    renderDevices(); // Cập nhật lại danh sách thiết bị
+                    updateScore();
+                });
+            });
+        }
+
+        // Cập nhật điểm
+        function updateScore() {
+            const correctDevices = gameState.droppedDevices.filter(d => d.isSmart).length;
+            gameState.score = correctDevices * 10;
+            document.getElementById('score').textContent = gameState.score;
+        }
+
+        // Đếm ngược thời gian
+        function startTimer() {
+            gameState.timeLeft = 60;
+            document.getElementById('timer').textContent = gameState.timeLeft;
+            
+            gameState.timerInterval = setInterval(() => {
+                gameState.timeLeft--;
+                document.getElementById('timer').textContent = gameState.timeLeft;
+                
+                if (gameState.timeLeft <= 0) {
+                    clearInterval(gameState.timerInterval);
+                    submitGame();
+                }
+            }, 1000);
+        }
+
+        // Setup buttons
+        function setupButtons() {
+            document.getElementById('startButton').addEventListener('click', startGame);
+            document.getElementById('submitButton').addEventListener('click', submitGame);
+            document.getElementById('resetButton').addEventListener('click', resetGame);
+            document.getElementById('backToGameButton').addEventListener('click', backToGame);
+            document.getElementById('playAgainButton').addEventListener('click', resetGame);
+        }
+
+        // Bắt đầu game
+        function startGame() {
+            const name = document.getElementById('studentName').value.trim();
+            const className = document.getElementById('studentClass').value.trim();
+            
+            if (!name || !className) {
+                const message = document.createElement('div');
+                message.className = 'bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl mt-4 text-center';
+                message.textContent = 'Vui lòng nhập đầy đủ họ tên và lớp!';
+                document.querySelector('#welcomePage > div').appendChild(message);
+                setTimeout(() => message.remove(), 3000);
+                return;
+            }
+            
+            gameState.studentName = name;
+            gameState.studentClass = className;
+            
+            document.getElementById('welcomePage').classList.add('hidden');
+            document.getElementById('gamePage').classList.remove('hidden');
+            document.getElementById('studentInfo').textContent = `${name} - ${className}`;
+            
+            startTimer();
+        }
+
+        // Nộp bài
+        function submitGame() {
+            if (gameState.gameEnded) return;
+            
+            gameState.gameEnded = true;
+            clearInterval(gameState.timerInterval);
+            playSound('submit.mp3');
+            
+            // Cập nhật màu sắc thiết bị
+            renderDroppedDevices();
+            
+            const correctDevices = gameState.droppedDevices.filter(d => d.isSmart);
+            const wrongDevices = gameState.droppedDevices.filter(d => !d.isSmart);
+            
+            // Hiển thị kết quả sau 1.5 giây để người chơi xem màu
+            setTimeout(() => {
+                showResults(correctDevices.length, wrongDevices.length);
+            }, 1500);
+        }
+
+        // Hiển thị kết quả
+        function showResults(correct, wrong) {
+            document.getElementById('gamePage').classList.add('hidden');
+            document.getElementById('resultPage').classList.remove('hidden');
+            
+            document.getElementById('resultStudentInfo').textContent = `${gameState.studentName} - ${gameState.studentClass}`;
+            document.getElementById('correctCount').textContent = correct;
+            document.getElementById('wrongCount').textContent = wrong;
+            document.getElementById('finalScore').textContent = gameState.score;
+            
+            // Đánh giá
+            let stars = '';
+            let rating = '';
+            
+            if (correct >= 10) {
+                stars = '⭐⭐⭐⭐⭐';
+                rating = 'Xuất sắc!';
+            } else if (correct >= 8) {
+                stars = '⭐⭐⭐⭐';
+                rating = 'Giỏi!';
+            } else if (correct >= 6) {
+                stars = '⭐⭐⭐';
+                rating = 'Khá!';
+            } else if (correct >= 4) {
+                stars = '⭐⭐';
+                rating = 'Trung bình';
+            } else {
+                stars = '⭐';
+                rating = 'Cần cố gắng hơn!';
+            }
+            
+            document.getElementById('stars').innerHTML = stars;
+            document.getElementById('rating').textContent = rating;
+        }
+
+        // Quay lại game
+        function backToGame() {
+            document.getElementById('resultPage').classList.add('hidden');
+            document.getElementById('gamePage').classList.remove('hidden');
+        }
+
+        // Chơi lại
+        function resetGame() {
+            clearInterval(gameState.timerInterval);
+            
+            gameState = {
+                studentName: "",
+                studentClass: "",
+                droppedDevices: [],
+                timeLeft: 60,
+                timerInterval: null,
+                score: 0,
+                gameEnded: false
+            };
+            
+            document.getElementById('gamePage').classList.add('hidden');
+            document.getElementById('resultPage').classList.add('hidden');
+            document.getElementById('welcomePage').classList.remove('hidden');
+            
+            document.getElementById('studentName').value = '';
+            document.getElementById('studentClass').value = '';
+            document.getElementById('score').textContent = '0';
+            document.getElementById('timer').textContent = '60';
+            
+            renderDevices();
+            renderDroppedDevices();
+        }
+
+        // Phát âm thanh
+        function playSound(filename) {
+            const audio = new Audio(filename);
+            audio.play().catch(err => {
+                // Âm thanh không phát được, không làm gì
+            });
+        }
+
+        // Element SDK
+        async function onConfigChange(config) {
+            const gameTitle = config.game_title || defaultConfig.game_title;
+            const instructionText = config.instruction_text || defaultConfig.instruction_text;
+            const startButtonText = config.start_button_text || defaultConfig.start_button_text;
+            const submitButtonText = config.submit_button_text || defaultConfig.submit_button_text;
+            const resultTitle = config.result_title || defaultConfig.result_title;
+
+            document.getElementById('welcomeTitle').textContent = gameTitle;
+            document.getElementById('gameTitle').textContent = gameTitle;
+            document.getElementById('instructionText').textContent = instructionText;
+            document.getElementById('startButton').textContent = startButtonText;
+            document.getElementById('submitButton').textContent = submitButtonText;
+            document.getElementById('resultPageTitle').textContent = resultTitle;
+        }
+
+        if (window.elementSdk) {
+            window.elementSdk.init({
+                defaultConfig: defaultConfig,
+                onConfigChange: onConfigChange,
+                mapToCapabilities: (config) => ({
+                    recolorables: [],
+                    borderables: [],
+                    fontEditable: undefined,
+                    fontSizeable: undefined
+                }),
+                mapToEditPanelValues: (config) => new Map([
+                    ["game_title", config.game_title || defaultConfig.game_title],
+                    ["instruction_text", config.instruction_text || defaultConfig.instruction_text],
+                    ["start_button_text", config.start_button_text || defaultConfig.start_button_text],
+                    ["submit_button_text", config.submit_button_text || defaultConfig.submit_button_text],
+                    ["result_title", config.result_title || defaultConfig.result_title]
+                ])
+            });
+        }
+
+        // Khởi tạo
+        initGame();
+    </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9af2bae9d2e9fd0e',t:'MTc2NTkzNTgxMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
